@@ -1,36 +1,42 @@
 package main
 
 import (
-	"embed"
+	"fmt"
 
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/rivo/tview"
 )
 
-//go:embed all:frontend/dist
-var assets embed.FS
+var serverAddress string = "ws://localhost:8080/connect"
+var vlcInstallLocation string = "c:\\program files\\videolan\\vlc\\vlc.exe"
 
 func main() {
-	// Create an instance of the app structure
-	app := NewApp()
+	app := tview.NewApplication()
+	textView := tview.NewTextView().
+		SetDynamicColors(true).
+		SetRegions(true).
+		SetWrap(true)
 
-	// Create application with options
-	err := wails.Run(&options.App{
-		Title:  "go-syncplay-client",
-		Width:  1024,
-		Height: 768,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		Bind: []interface{}{
-			app,
-		},
-	})
+	form := tview.NewForm().
+		AddInputField("Server Address", serverAddress, 50, nil, nil).
+		AddInputField("VLC Location", vlcInstallLocation, 50, nil, nil).
+		AddButton("Start", func() {
+			StartServer(textView)
+		}).
+		AddButton("Quit", func() {
+			app.Stop()
+		})
 
-	if err != nil {
-		println("Error:", err.Error())
+	flex := tview.NewFlex().
+		AddItem(form, 0, 1, true).
+		AddItem(textView, 0, 1, false)
+
+	form.SetBorder(true).SetTitle("Go Syncplay Client").SetTitleAlign(tview.AlignLeft)
+	if err := app.SetRoot(flex, true).EnableMouse(true).EnablePaste(true).Run(); err != nil {
+		panic(err)
 	}
+}
+
+func StartServer(textView *tview.TextView) {
+	textView.Clear()
+	fmt.Fprintf(textView, "[green]Server Connected[-]")
 }
